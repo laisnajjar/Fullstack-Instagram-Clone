@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
+    <title>insta485</title>
+  </head>
+  <body class="explore">
+    <header>
+      <div class="header-container">
+        <a class="header-logo" href="/">
+          <img alt="" class="header-logo" src="/uploads/instalogo.jpg" />
+        </a>
+        <h1>insta485</h1>
+        <a class="header-links" href="/explore/">explore</a>
+        <a class="header-links" href="/users/{{logname}}/">{{logname}}</a>
+      </div>
+      <hr />
+    </header>
+    <h2>Following</h2>
+    <div class="explore-container">
+      <div>
+        {% for user in user %}
+        <div class="user-container">
+          <img
+            class="explore-image"
+            src="/uploads/{{user.user_profile_pic_url}}"
+            alt=""
+          />
+          <a class="explore-name" href="/users/{{user.username}}/"
+            >{{user.username}}</a
+          >
+          {%if logname != user.username%}{% if user.logname_follows_username%}
+          <div>
+            following
+            <form
+              action="/following/?target=/users/{{username}}/following/"
+              method="post"
+              enctype="multipart/form-data"
+            >
+              <input type="submit" name="unfollow" value="unfollow" />
+              <input type="hidden" name="username" value="{{user.username}}" />
+              <input type="hidden" name="operation" value="unfollow" />
+            </form>
+          </div>
+
+          {% else %}
+          <div>
+            not following
+            <form
+              action="/following/?target=/users/{{username}}/following/"
+              method="post"
+              enctype="multipart/form-data"
+            >
+              <input type="submit" name="follow" value="follow" />
+              <input type="hidden" name="username" value="{{user.username}}" />
+              <input type="hidden" name="operation" value="follow" />
+            </form>
+          </div>
+          {% endif %} {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </body>
+</html>

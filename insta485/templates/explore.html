@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
+    <title>insta485</title>
+  </head>
+  <body class="explore">
+    <header>
+      <div class="header-container">
+        <a class="header-logo" href="/">
+          <img alt="" class="header-logo" src="/uploads/instalogo.jpg" />
+        </a>
+        <h1>insta485</h1>
+        <a class="header-links" href="/explore/">explore</a>
+        <a class="header-links" href="/users/{{logname}}/">{{logname}}</a>
+      </div>
+      <hr />
+    </header>
+    <h2>Discover People</h2>
+    <div class="explore-container">
+      <div>
+        {% for user in users %} {% if user.username != logname %}
+        <div>
+          <img
+            class="explore-image"
+            src="/uploads/{{user.user_profile_pic}}"
+            alt=""
+          />
+          <a class="explore-name" href="/users/{{user.username}}/"
+            >{{user.username}}</a
+          >
+          <div>
+            <form
+              action="/following/?target=/explore/"
+              method="post"
+              enctype="multipart/form-data"
+            >
+              <input type="submit" name="follow" value="follow" />
+              <input type="hidden" name="username" value="{{user.username}}" />
+              <input type="hidden" name="operation" value="follow" />
+            </form>
+          </div>
+          {% else %}
+        </div>
+        {% endif %} {% endfor %}
+      </div>
+    </div>
+  </body>
+</html>

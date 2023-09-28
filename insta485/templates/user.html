@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
+    <title>insta485</title>
+  </head>
+  <body class="user-page">
+    <!--Beg header-->
+    <header>
+      <div class="header-container">
+        <a class="header-logo" href="/">
+          <img alt="" class="header-logo" src="/uploads/instalogo.jpg" />
+        </a>
+        <h1>insta485</h1>
+        <a class="header-links" href="/explore/">explore</a>
+        <a class="header-links" href="/users/{{logname}}/">{{logname}}</a>
+      </div>
+      <hr />
+    </header>
+    <!--END header-->
+    <h2>{{user.username}}</h2>
+    <!-- Beg Profile info -->
+    <div class="profile-info">
+      {% if user.username == logname %}
+      <a href="/accounts/edit/">Edit profile</a>
+      <form
+        action="/accounts/logout/"
+        method="post"
+        enctype="multipart/form-data"
+      >
+        <input type="submit" name="logout" value="Logout" />
+      </form>
+      {% endif %}
+    </div>
+    <!-- Beg Following/Follower-->
+    <div class="profile-info">
+      <b style="padding-left: 5px"
+        >{{ user.post_count|default(0) }} {% if user.post_count|default(0) > 1
+        or user.post_count|default(0) == 0 %} posts {% else %} post {% endif
+        %}</b
+      >
+      <a style="padding-left: 5px" href="/users/{{user.username}}/followers/">
+        {{follow.follower_count}} {% if follow.follower_count > 1 or
+        follow.follower_count == 0 %} followers {% else %} follower {%endif %}
+      </a>
+      <a style="padding-left: 5px" href="/users/{{user.username}}/following/"
+        >{{follow.following_count}} following
+      </a>
+    </div>
+    <!-- END Following/Follower-->
+    <h3>{{user.fullname}}</h3>
+    <div>
+      {% if user.logname_follows_username and user.username != logname %}
+      <div>following</div>
+      <form
+        action="/following/?target=/users/{{username}}/"
+        method="post"
+        enctype="multipart/form-data"
+      >
+        <input type="submit" name="unfollow" value="unfollow" />
+        <input type="hidden" name="username" value="{{username}}" />
+        <input type="hidden" name="operation" value="unfollow" />
+      </form>
+      {% endif %}
+    </div>
+    <div>
+      {% if not user.logname_follows_username and user.username != logname %}
+      <div>not following</div>
+      <form
+        action="/following/?target=/users/{{username}}/"
+        method="post"
+        enctype="multipart/form-data"
+      >
+        <input type="submit" name="unfollow" value="unfollow" />
+        <input type="hidden" name="username" value="{{username}}" />
+        <input type="hidden" name="operation" value="unfollow" />
+      </form>
+      {% endif %}
+    </div>
+    <div>
+      <!-- End Profile info -->
+      <!-- BEG posts form -->
+      {% if user.username == logname %}
+      <form
+        action="/posts/?target=/users/{{username}}/"
+        method="post"
+        enctype="multipart/form-data"
+      >
+        <input type="file" name="file" accept="image/*" required />
+        <input type="submit" name="create_post" value="upload new post" />
+        <input type="hidden" name="operation" value="create" />
+      </form>
+
+      {% endif %}
+      <!-- End posts form -->
+      <!-- BEG posts -->
+    </div>
+    {% if user.post_count == 0%}
+    <b>No posts yet.</b>
+    {%else%} {% for post in posts %}
+    <div class="container">
+      <div>
+        <a href="/posts/{{post.postid}}/">
+          <img class="post-pic" alt="" src="/uploads/{{post.post_url}}" />
+        </a>
+      </div>
+    </div>
+    {% endfor %} {%endif%}
+    <!-- End posts -->
+  </body>
+</html>
