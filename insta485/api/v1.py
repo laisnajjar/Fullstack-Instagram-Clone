@@ -102,16 +102,51 @@ def get_post(postid_url_slug):
         (postid_url_slug,)
     )
     comments = comment_fetch.fetchall()
+    post_fetch = connection.execute(
+        """
+        SELECT p.postid, p.filename, p.owner, p.created, u.filename as headshot
+        FROM posts p
+        INNER JOIN users u ON u.username = p.owner
+        WHERE postid = ?
+        """,
+        (postid_url_slug,)
+    )
+    post = post_fetch.fetchone()
+    owner = post['owner']
+    like_fetch = connection.execute(
+        """
+        SELECT Count(*) as num_likes, likeid,
+        CASE WHEN owner = ? THEN 1 ELSE 0 END AS lognameLikesThis
+        FROM likes
+        WHERE postid = ?
+        """,
+        (owner, postid_url_slug,)
+    )
+    likes = like_fetch.fetchone()
     context = {
        "comments": [{
            "commentid":  comment['commentid'],
            "lognameOwnsThis": True if comment['owner'] == logname else False,
            "owner": comment['owner'],
-           "ownerShowUrl":  f"users/{comment['owner']}/",
+           "ownerShowUrl":  f"/users/{comment['owner']}/",
            "text": comment['text'],
-           "url": f"/api/v1/comments/{comment['commentid']}"
-        } for comment in comments],
+           "url": f"/api/v1/comments/{comment['commentid']}/"
+                } for comment in comments],
         "comments_url": f"/api/v1/comments/?postid={postid_url_slug}",
-        
+        "created": post['created'],
+        "imgUrl": f"/uploads/{post['filename']}",
+        "likes": [{
+            "lognameLikesThis":
+            True if likes['lognameLikesThis'] == 1 else False,
+            "numLikes": likes['num_likes'],
+            "url": f"/api/v1/likes/{likes['likeid']}/"
+            }],
+        "owner": post['owner'],
+        "ownerImgUrl": f"/uploads/{post['headshot']}",
+        "ownerShowUrl": f"/users/{post['owner']}/",
+        "postShowUrl": f"/posts/{post['postid']}/",
+        "postid": post['postid'],
+        "url": f"/api/v1/posts/{post['postid']}/",
+
     }
     return flask.jsonify(**context)
