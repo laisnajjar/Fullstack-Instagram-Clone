@@ -5,6 +5,15 @@ from flask import request, jsonify
 import insta485
 
 
+def check_login(logname, password):
+    """Check if user is logged in."""
+    if logname in flask.session:
+        return True
+    elif check_password(logname, password):
+        return True
+    return False
+
+
 def check_postid_range(postid):
     """Check if postid is in range."""
     connection = insta485.model.get_db()
@@ -15,6 +24,27 @@ def check_postid_range(postid):
     if postid <= check:
         return False
     return True
+
+
+def check_password(logname, password):
+    """Check password."""
+    connection = insta485.model.get_db()
+    user_fetch = connection.execute(
+        """
+        SELECT u.username, u.password
+        FROM users u
+        WHERE u.username = ?
+        """,
+        (logname,)
+    )
+    users = user_fetch.fetchone()
+    if users is None:
+        return False
+    salt = users['password'].split('$')[1]
+    password_db_string = insta485.views.pass_help.hash_password(salt, password)
+    if users['password'] == password_db_string:
+        return True
+    return False
 
 
 @insta485.app.route('/api/v1/')
@@ -33,7 +63,15 @@ def api_get_resource_urls():
 def api_get_newest_posts():
     """Return 10 newest posts."""
     connection = insta485.model.get_db()
+    if request.authorization is None:
+        return jsonify({"message": "Forbidden", "status_code": 403}), 403
+
     logname = request.authorization['username']
+    password = request.authorization['password']
+
+    if not check_login(logname, password):
+        return jsonify({"message": "Forbidden", "status_code": 403}), 403
+
     postid_lte = request.args.get("postid_lte", default=None, type=int)
     size = request.args.get("size", default=10, type=int)
     page = request.args.get("page", default=0, type=int)
@@ -85,13 +123,13 @@ def api_get_newest_posts():
         (logname, logname,)
     ).fetchall()
     next_url = ""
-    if len(num_posts) > size:
+    if len(num_posts) - (offset) >= size:
         next_url = f"/api/v1/posts/?size={size}&page={page+1}" \
                 f"&postid_lte={postid_lte}"
 
     url = request.url
     url = url[url.find('/api/'):]
-
+    print(next_url)
     context = {
         "next": next_url,
         "results": [{
@@ -107,7 +145,12 @@ def api_get_newest_posts():
 def api_get_post(postid_url_slug):
     """Return post on postid."""
     connection = insta485.model.get_db()
+    if request.authorization is None:
+        return jsonify({"message": "Forbidden", "status_code": 403}), 403
     logname = request.authorization['username']
+    password = request.authorization['password']
+    if not check_login(logname, password):
+        return jsonify({"message": "Forbidden", "status_code": 403}), 403
     if check_postid_range(postid_url_slug):
         return jsonify({"message": "Not Found", "status_code": 404}), 404
     comment_fetch = connection.execute(
@@ -153,7 +196,8 @@ def api_get_post(postid_url_slug):
         "likes": {
             "lognameLikesThis": likes['lognameLikesThis'] == 1,
             "numLikes": likes['num_likes'],
-            "url": None if likes['num_likes'] == 0 else f"/api/v1/likes/{likes['likeid']}/"
+            "url": None if likes['num_likes'] == 0
+            else f"/api/v1/likes/{likes['likeid']}/"
             },
         "owner": post['owner'],
         "ownerImgUrl": f"/uploads/{post['headshot']}",
@@ -170,7 +214,14 @@ def api_get_post(postid_url_slug):
 def api_update_likes():
     """Update likes."""
     connection = insta485.model.get_db()
+    if request.authorization is None:
+        return jsonify({"message": "Forbidden", "status_code": 403}), 403
+
     logname = request.authorization['username']
+    password = request.authorization['password']
+
+    if not check_login(logname, password):
+        return jsonify({"message": "Forbidden", "status_code": 403}), 403
     postid = int(request.args.get('postid'))
     if check_postid_range(postid):
         return jsonify({"message": "Not Found", "status_code": 404}), 404
@@ -210,7 +261,14 @@ def api_update_likes():
 def api_delete_likes(likeid):
     """Delete like."""
     connection = insta485.model.get_db()
+    if request.authorization is None:
+        return jsonify({"message": "Forbidden", "status_code": 403}), 403
+
     logname = request.authorization['username']
+    password = request.authorization['password']
+
+    if not check_login(logname, password):
+        return jsonify({"message": "Forbidden", "status_code": 403}), 403
     like_fetch = connection.execute(
         """
         SELECT likeid,
@@ -238,7 +296,14 @@ def api_delete_likes(likeid):
 def api_add_comment():
     """Add comment to post."""
     connection = insta485.model.get_db()
+    if request.authorization is None:
+        return jsonify({"message": "Forbidden", "status_code": 403}), 403
+
     logname = request.authorization['username']
+    password = request.authorization['password']
+
+    if not check_login(logname, password):
+        return jsonify({"message": "Forbidden", "status_code": 403}), 403
     postid = int(request.args.get('postid'))
     text = request.get_json().get('text')
     if check_postid_range(postid):
@@ -269,7 +334,14 @@ def api_add_comment():
 def api_del_comment(commentid):
     """Delete comment."""
     connection = insta485.model.get_db()
+    if request.authorization is None:
+        return jsonify({"message": "Forbidden", "status_code": 403}), 403
+
     logname = request.authorization['username']
+    password = request.authorization['password']
+
+    if not check_login(logname, password):
+        return jsonify({"message": "Forbidden", "status_code": 403}), 403
     comment_fetch = connection.execute(
         """
         SELECT commentid,
