@@ -5,8 +5,20 @@ from flask import request, jsonify
 import insta485
 
 
+def check_postid_range(postid):
+    """Check if postid is in range."""
+    connection = insta485.model.get_db()
+    check_fetch = connection.execute(
+        "SELECT MAX(postid) as max FROM posts"
+    ).fetchone()
+    check = check_fetch['max']
+    if postid <= check:
+        return False
+    return True
+
+
 @insta485.app.route('/api/v1/')
-def get_resource_urls():
+def api_get_resource_urls():
     """Return API resource URLs."""
     context = {
         "comments": "/api/v1/comments/",
@@ -18,7 +30,7 @@ def get_resource_urls():
 
 
 @insta485.app.route('/api/v1/posts/')
-def get_newest_posts():
+def api_get_newest_posts():
     """Return 10 newest posts."""
     connection = insta485.model.get_db()
     logname = request.authorization['username']
@@ -91,11 +103,13 @@ def get_newest_posts():
     return jsonify(**context)
 
 
-@insta485.app.route('/api/v1/posts/<int:postid_url_slug>/')
-def get_post(postid_url_slug):
+@insta485.app.route('/api/v1/posts/<int:postid_url_slug>/', methods=["GET"])
+def api_get_post(postid_url_slug):
     """Return post on postid."""
     connection = insta485.model.get_db()
     logname = request.authorization['username']
+    if check_postid_range(postid_url_slug):
+        return jsonify({"message": "Not Found", "status_code": 404}), 404
     comment_fetch = connection.execute(
         """SELECT commentid, text, owner, postid, created
         FROM comments WHERE postid = ?""",
@@ -112,7 +126,6 @@ def get_post(postid_url_slug):
         (postid_url_slug,)
     )
     post = post_fetch.fetchone()
-    owner = post['owner']
     like_fetch = connection.execute(
         """
         SELECT Count(*) as num_likes, likeid,
@@ -120,27 +133,28 @@ def get_post(postid_url_slug):
         FROM likes
         WHERE postid = ?
         """,
-        (owner, postid_url_slug,)
+        (logname, postid_url_slug,)
     )
     likes = like_fetch.fetchone()
     context = {
-       "comments": [{
-           "commentid":  comment['commentid'],
-           "lognameOwnsThis": True if comment['owner'] == logname else False,
-           "owner": comment['owner'],
-           "ownerShowUrl":  f"/users/{comment['owner']}/",
-           "text": comment['text'],
-           "url": f"/api/v1/comments/{comment['commentid']}/"
-                } for comment in comments],
+        "comments": [
+            {
+                "commentid": comment['commentid'],
+                "lognameOwnsThis": comment['owner'] == logname,
+                "owner": comment['owner'],
+                "ownerShowUrl": f"/users/{comment['owner']}/",
+                "text": comment['text'],
+                "url": f"/api/v1/comments/{comment['commentid']}/"
+            } for comment in comments
+        ],
         "comments_url": f"/api/v1/comments/?postid={postid_url_slug}",
         "created": post['created'],
         "imgUrl": f"/uploads/{post['filename']}",
-        "likes": [{
-            "lognameLikesThis":
-            True if likes['lognameLikesThis'] == 1 else False,
+        "likes": {
+            "lognameLikesThis": likes['lognameLikesThis'] == 1,
             "numLikes": likes['num_likes'],
-            "url": f"/api/v1/likes/{likes['likeid']}/"
-            }],
+            "url": None if likes['num_likes'] == 0 else f"/api/v1/likes/{likes['likeid']}/"
+            },
         "owner": post['owner'],
         "ownerImgUrl": f"/uploads/{post['headshot']}",
         "ownerShowUrl": f"/users/{post['owner']}/",
@@ -150,3 +164,130 @@ def get_post(postid_url_slug):
 
     }
     return flask.jsonify(**context)
+
+
+@insta485.app.route('/api/v1/likes/', methods=["POST"])
+def api_update_likes():
+    """Update likes."""
+    connection = insta485.model.get_db()
+    logname = request.authorization['username']
+    postid = int(request.args.get('postid'))
+    if check_postid_range(postid):
+        return jsonify({"message": "Not Found", "status_code": 404}), 404
+    like_fetch = connection.execute(
+        """
+        SELECT likeid,
+        CASE WHEN owner = ? THEN 1 ELSE 0 END AS lognameLikesThis
+        FROM likes
+        WHERE postid = ?
+        """,
+        (logname, postid,)
+    )
+    likes = like_fetch.fetchone()
+    # user already liked post
+    if likes is not None and likes['lognameLikesThis'] == 1:
+        return jsonify({"likeid": likes['likeid'],
+                        "url": f"/api/v1/likes/{likes['likeid']}/"}), 200
+    # update user to like post
+    connection.execute(
+        """
+        INSERT INTO likes (owner, postid)
+        VALUES (?, ?)
+        """,
+        (logname, postid,)
+    )
+    # get likeids from inserted
+    get_likeid = connection.execute(
+        "SELECT likeid FROM likes WHERE postid = ?",
+        (postid,)
+    )
+    got_likes = get_likeid.fetchone()
+    return jsonify({"likeid": got_likes['likeid'],
+                    "url": f"/api/v1/likes/{got_likes['likeid']}/"}), 201
+
+
+@insta485.app.route('/api/v1/likes/<int:likeid>/', methods=["DELETE"])
+def api_delete_likes(likeid):
+    """Delete like."""
+    connection = insta485.model.get_db()
+    logname = request.authorization['username']
+    like_fetch = connection.execute(
+        """
+        SELECT likeid,
+        CASE WHEN owner = ? THEN 1 ELSE 0 END AS lognameOwnsThis
+        FROM likes WHERE likeid = ?
+        """,
+        (logname, likeid)
+    )
+    like_check = like_fetch.fetchone()
+    if like_check is None:
+        return "", 404
+    if like_check['lognameOwnsThis'] == 0:
+        return "", 403
+    connection.execute(
+        """
+        DELETE FROM likes
+        WHERE likeid = ?
+        """,
+        (likeid,)
+    )
+    return "", 204
+
+
+@insta485.app.route('/api/v1/comments/', methods=["POST"])
+def api_add_comment():
+    """Add comment to post."""
+    connection = insta485.model.get_db()
+    logname = request.authorization['username']
+    postid = int(request.args.get('postid'))
+    text = request.get_json().get('text')
+    if check_postid_range(postid):
+        return jsonify({"message": "Not Found", "status_code": 404}), 404
+    connection.execute(
+        """
+        INSERT INTO comments (text, owner, postid)
+        VALUES (?, ?, ?)
+        """,
+        (text, logname, postid,)
+    )
+    id_fetch = connection.execute(
+        "SELECT last_insert_rowid() as commentid"
+    )
+    get_id = id_fetch.fetchone()
+    context = {
+        "commentid": get_id['commentid'],
+        "lognameOwnsThis": True,
+        "owner": logname,
+        "ownerShowUrl": f"/users/{logname}/",
+        "text": text,
+        "url": f"/api/v1/comments/{get_id['commentid']}/"
+    }
+    return jsonify(**context), 201
+
+
+@insta485.app.route('/api/v1/comments/<int:commentid>/', methods=["DELETE"])
+def api_del_comment(commentid):
+    """Delete comment."""
+    connection = insta485.model.get_db()
+    logname = request.authorization['username']
+    comment_fetch = connection.execute(
+        """
+        SELECT commentid,
+        CASE WHEN owner = ? THEN 1 ELSE 0 END AS lognameOwnsThis
+        FROM comments WHERE commentid = ?
+        """,
+        (logname, commentid)
+    )
+    comment_check = comment_fetch.fetchone()
+    if comment_check is None:
+        return "", 404
+    if comment_check['lognameOwnsThis'] == 0:
+        return "", 403
+    connection.execute(
+        """
+        DELETE FROM comments
+        WHERE commentid = ?
+        """,
+        (commentid,)
+    )
+    return "", 204
