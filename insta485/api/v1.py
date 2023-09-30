@@ -5,36 +5,9 @@ from flask import request, jsonify
 import insta485
 
 
-def check_login():
-    """Test login."""
-    if 'username' not in flask.session:
-        if request.authorization is None:
-            return None
-        else:
-            logname = request.authorization['username']
-            password = request.authorization['password']
-            if not check_password(logname, password):
-                return None
-            return logname
-    else:
-        logname = flask.session['username']
-        return logname
-
-
-def check_postid_range(postid):
-    """Check if postid is in range."""
-    connection = insta485.model.get_db()
-    check_fetch = connection.execute(
-        "SELECT MAX(postid) as max FROM posts"
-    ).fetchone()
-    check = check_fetch['max']
-    if postid <= check:
-        return False
-    return True
-
-
 def check_password(logname, password):
     """Check password."""
+    # fetch user from database
     connection = insta485.model.get_db()
     user_fetch = connection.execute(
         """
@@ -45,13 +18,85 @@ def check_password(logname, password):
         (logname,)
     )
     users = user_fetch.fetchone()
+    # check user exists
     if users is None:
         return False
+    # hash given password with same salt as password in database
+    # then check if passwords match
     salt = users['password'].split('$')[1]
     password_db_string = insta485.views.pass_help.hash_password(salt, password)
     if users['password'] == password_db_string:
         return True
     return False
+
+
+def check_login():
+    """Test login."""
+    # user not in session, must check authorization
+    if 'username' not in flask.session:
+        # authorization not provided
+        if request.authorization is None:
+            return None
+        # authorization provided, check password
+        logname = request.authorization['username']
+        password = request.authorization['password']
+        if not check_password(logname, password):
+            return None
+        return logname
+    # return logname from flask session
+    logname = flask.session['username']
+    return logname
+
+
+def check_postid_range(postid):
+    """Check if postid is in range."""
+    # fecth Max(*) from databse
+    connection = insta485.model.get_db()
+    check_fetch = connection.execute(
+        "SELECT MAX(postid) as max FROM posts"
+    ).fetchone()
+    # check if postid is in range of max
+    check = check_fetch['max']
+    if postid <= check:
+        return False
+    return True
+
+
+def get_newest_post_id(logname):
+    """Get newest post id."""
+    connection = insta485.model.get_db()
+    postid_fetch = connection.execute(
+        """
+        SELECT postid as def
+            FROM posts
+            WHERE (owner IN (
+                SELECT username2
+                FROM following
+                WHERE username1 = ?)
+            OR owner = ?)
+            ORDER BY postid DESC
+        """,
+        (logname, logname,)
+    ).fetchone()
+    return postid_fetch['def']
+
+
+def get_num_posts(logname):
+    """Get number of posts."""
+    connection = insta485.model.get_db()
+    postid_fetch = connection.execute(
+        """
+        SELECT COUNT(*) as num_posts
+            FROM posts
+            WHERE (owner IN (
+                SELECT username2
+                FROM following
+                WHERE username1 = ?)
+            OR owner = ?)
+        """,
+        (logname, logname,)
+    ).fetchone()
+    return postid_fetch['num_posts']
 
 
 @insta485.app.route('/api/v1/')
@@ -70,31 +115,25 @@ def api_get_resource_urls():
 def api_get_newest_posts():
     """Return 10 newest posts."""
     connection = insta485.model.get_db()
+    # authentication
     logname = check_login()
     if logname is None:
         return jsonify({"message": "Forbidden", "status_code": 403}), 403
-
+    # get query parameters
     postid_lte = request.args.get("postid_lte", default=None, type=int)
     size = request.args.get("size", default=10, type=int)
     page = request.args.get("page", default=0, type=int)
     offset = page * size
+    # check if size and page are positive
     if size < 0 or page < 0:
         return jsonify({"message": "Bad Request", "status_code": 400}), 400
+    # if postid_lte is None, we need the newest postid
     if postid_lte is None:
-        postid_lte_fetch = connection.execute(
-            """
-            SELECT postid as def
-            FROM posts
-            WHERE (owner IN (
-                SELECT username2
-                FROM following
-                WHERE username1 = ?)
-            OR owner = ?)
-            ORDER BY postid DESC
-            """,
-            (logname, logname)
-        ).fetchone()
-        postid_lte = postid_lte_fetch['def']
+        postid_lte = get_newest_post_id(logname)
+    # fetch (size) amount of posts
+    # where postid <= postid_lte
+    # and owner is followed by logname
+    # starting from ids > page * size
     post_fetch_newest = connection.execute(
         """
         SELECT postid
@@ -112,26 +151,15 @@ def api_get_newest_posts():
         (logname, logname, postid_lte, size, offset)
     )
     posts = post_fetch_newest.fetchall()
-    num_posts = connection.execute(
-        """
-        SELECT postid
-        FROM posts
-        WHERE (owner IN (
-            SELECT username2
-            FROM following
-            WHERE username1 = ?)
-        OR owner = ?)
-        """,
-        (logname, logname,)
-    ).fetchall()
+    # if there are more posts than requested, next url is valid
     next_url = ""
-    if len(num_posts) - (offset) >= size:
+    if get_num_posts(logname) - (offset) >= size:
         next_url = f"/api/v1/posts/?size={size}&page={page+1}" \
                 f"&postid_lte={postid_lte}"
-
+    # get url from flask, but strip extra (e.g. "localhost:5000")
     url = request.url
     url = url[url.find('/api/'):]
-    print(next_url)
+    # context
     context = {
         "next": next_url,
         "results": [{
@@ -147,11 +175,14 @@ def api_get_newest_posts():
 def api_get_post(postid_url_slug):
     """Return post on postid."""
     connection = insta485.model.get_db()
+    # authentication
     logname = check_login()
     if logname is None:
         return jsonify({"message": "Forbidden", "status_code": 403}), 403
+    # check if postid is in range
     if check_postid_range(postid_url_slug):
         return jsonify({"message": "Not Found", "status_code": 404}), 404
+    # fetch comments, post, and likes
     comment_fetch = connection.execute(
         """SELECT commentid, text, owner, postid, created
         FROM comments WHERE postid = ?""",
@@ -178,6 +209,7 @@ def api_get_post(postid_url_slug):
         (logname, postid_url_slug,)
     )
     likes = like_fetch.fetchone()
+    # context
     context = {
         "comments": [
             {
