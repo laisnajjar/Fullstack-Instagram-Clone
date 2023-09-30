@@ -5,13 +5,20 @@ from flask import request, jsonify
 import insta485
 
 
-def check_login(logname, password):
-    """Check if user is logged in."""
-    if logname in flask.session:
-        return True
-    elif check_password(logname, password):
-        return True
-    return False
+def check_login():
+    """Test login."""
+    if 'username' not in flask.session:
+        if request.authorization is None:
+            return None
+        else:
+            logname = request.authorization['username']
+            password = request.authorization['password']
+            if not check_password(logname, password):
+                return None
+            return logname
+    else:
+        logname = flask.session['username']
+        return logname
 
 
 def check_postid_range(postid):
@@ -63,13 +70,8 @@ def api_get_resource_urls():
 def api_get_newest_posts():
     """Return 10 newest posts."""
     connection = insta485.model.get_db()
-    if request.authorization is None:
-        return jsonify({"message": "Forbidden", "status_code": 403}), 403
-
-    logname = request.authorization['username']
-    password = request.authorization['password']
-
-    if not check_login(logname, password):
+    logname = check_login()
+    if logname is None:
         return jsonify({"message": "Forbidden", "status_code": 403}), 403
 
     postid_lte = request.args.get("postid_lte", default=None, type=int)
@@ -145,11 +147,8 @@ def api_get_newest_posts():
 def api_get_post(postid_url_slug):
     """Return post on postid."""
     connection = insta485.model.get_db()
-    if request.authorization is None:
-        return jsonify({"message": "Forbidden", "status_code": 403}), 403
-    logname = request.authorization['username']
-    password = request.authorization['password']
-    if not check_login(logname, password):
+    logname = check_login()
+    if logname is None:
         return jsonify({"message": "Forbidden", "status_code": 403}), 403
     if check_postid_range(postid_url_slug):
         return jsonify({"message": "Not Found", "status_code": 404}), 404
@@ -214,13 +213,8 @@ def api_get_post(postid_url_slug):
 def api_update_likes():
     """Update likes."""
     connection = insta485.model.get_db()
-    if request.authorization is None:
-        return jsonify({"message": "Forbidden", "status_code": 403}), 403
-
-    logname = request.authorization['username']
-    password = request.authorization['password']
-
-    if not check_login(logname, password):
+    logname = check_login()
+    if logname is None:
         return jsonify({"message": "Forbidden", "status_code": 403}), 403
     postid = int(request.args.get('postid'))
     if check_postid_range(postid):
@@ -261,13 +255,8 @@ def api_update_likes():
 def api_delete_likes(likeid):
     """Delete like."""
     connection = insta485.model.get_db()
-    if request.authorization is None:
-        return jsonify({"message": "Forbidden", "status_code": 403}), 403
-
-    logname = request.authorization['username']
-    password = request.authorization['password']
-
-    if not check_login(logname, password):
+    logname = check_login()
+    if logname is None:
         return jsonify({"message": "Forbidden", "status_code": 403}), 403
     like_fetch = connection.execute(
         """
@@ -296,13 +285,8 @@ def api_delete_likes(likeid):
 def api_add_comment():
     """Add comment to post."""
     connection = insta485.model.get_db()
-    if request.authorization is None:
-        return jsonify({"message": "Forbidden", "status_code": 403}), 403
-
-    logname = request.authorization['username']
-    password = request.authorization['password']
-
-    if not check_login(logname, password):
+    logname = check_login()
+    if logname is None:
         return jsonify({"message": "Forbidden", "status_code": 403}), 403
     postid = int(request.args.get('postid'))
     text = request.get_json().get('text')
@@ -334,13 +318,8 @@ def api_add_comment():
 def api_del_comment(commentid):
     """Delete comment."""
     connection = insta485.model.get_db()
-    if request.authorization is None:
-        return jsonify({"message": "Forbidden", "status_code": 403}), 403
-
-    logname = request.authorization['username']
-    password = request.authorization['password']
-
-    if not check_login(logname, password):
+    logname = check_login()
+    if logname is None:
         return jsonify({"message": "Forbidden", "status_code": 403}), 403
     comment_fetch = connection.execute(
         """

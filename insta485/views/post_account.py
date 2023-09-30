@@ -56,7 +56,6 @@ def login():
     password_db_string = hash_password(salt, attempted_password)
     if users is None or users['password'] != password_db_string:
         abort(403)
-
     flask.session['username'] = attempted_username
     return redirect(url_for('show_index'))
 
