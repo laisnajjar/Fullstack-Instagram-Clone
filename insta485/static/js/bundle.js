@@ -10,7 +10,7 @@
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (/* binding */ Post)
+/* harmony export */   "default": () => (/* binding */ RenderAllPosts)
 /* harmony export */ });
 /* harmony import */ var _babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/slicedToArray */ "./node_modules/@babel/runtime/helpers/esm/slicedToArray.js");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
@@ -21,55 +21,211 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-// The parameter of this function is an object with a string called url inside it.
-// url is a prop for the Post component.
-function Post(_ref) {
+/* Render all posts, "The Father of all posts" */
+function RenderAllPosts(_ref) {
   var url = _ref.url;
-  /* Display image and post owner of a single post */
-
-  var _useState = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(""),
+  var _useState = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)([]),
     _useState2 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__["default"])(_useState, 2),
-    imgUrl = _useState2[0],
-    setImgUrl = _useState2[1];
-  var _useState3 = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(""),
-    _useState4 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__["default"])(_useState3, 2),
-    owner = _useState4[0],
-    setOwner = _useState4[1];
+    posts = _useState2[0],
+    setPosts = _useState2[1];
   (0,react__WEBPACK_IMPORTED_MODULE_1__.useEffect)(function () {
-    // Declare a boolean flag that we can use to cancel the API request.
     var ignoreStaleRequest = false;
-
-    // Call REST API to get the post's information
     fetch(url, {
       credentials: "same-origin"
     }).then(function (response) {
       if (!response.ok) throw Error(response.statusText);
       return response.json();
     }).then(function (data) {
-      // If ignoreStaleRequest was set to true, we want to ignore the results of the
-      // the request. Otherwise, update the state to trigger a new render.
       if (!ignoreStaleRequest) {
-        setImgUrl(data.imgUrl);
-        setOwner(data.owner);
+        setPosts(data.results.map(function (post) {
+          return post.url;
+        }));
       }
     })["catch"](function (error) {
       return console.log(error);
     });
     return function () {
-      // This is a cleanup function that runs whenever the Post component
-      // unmounts or re-renders. If a Post is about to unmount or re-render, we
-      // should avoid updating state.
       ignoreStaleRequest = true;
     };
   }, [url]);
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("div", null, posts.map(function (post, index) {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement(Post, {
+      url: post,
+      key: index
+    });
+  }));
+}
 
-  // Render post image and post owner
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("div", {
-    className: "post"
+/* Display image and post owner of a single post */
+function Post(_ref2) {
+  var url = _ref2.url;
+  var _useState3 = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(""),
+    _useState4 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__["default"])(_useState3, 2),
+    created = _useState4[0],
+    setCreated = _useState4[1];
+  var _useState5 = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(""),
+    _useState6 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__["default"])(_useState5, 2),
+    imgUrl = _useState6[0],
+    setImgUrl = _useState6[1];
+  var _useState7 = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(""),
+    _useState8 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__["default"])(_useState7, 2),
+    owner = _useState8[0],
+    setOwner = _useState8[1];
+  var _useState9 = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(""),
+    _useState10 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__["default"])(_useState9, 2),
+    ownerImgUrl = _useState10[0],
+    setOwnerImgUrl = _useState10[1];
+  var _useState11 = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(""),
+    _useState12 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__["default"])(_useState11, 2),
+    onwerShowUrl = _useState12[0],
+    setOwnerShowUrl = _useState12[1];
+  var _useState13 = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(""),
+    _useState14 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__["default"])(_useState13, 2),
+    postShowUrl = _useState14[0],
+    setPostShowUrl = _useState14[1];
+  var _useState15 = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(""),
+    _useState16 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__["default"])(_useState15, 2),
+    likes = _useState16[0],
+    setLikes = _useState16[1];
+  var _useState17 = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(false),
+    _useState18 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__["default"])(_useState17, 2),
+    lognameLikesThis = _useState18[0],
+    setLognameLikesThis = _useState18[1];
+  var _useState19 = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(""),
+    _useState20 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__["default"])(_useState19, 2),
+    likesUrl = _useState20[0],
+    setLikesUrl = _useState20[1];
+  var _useState21 = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(""),
+    _useState22 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__["default"])(_useState21, 2),
+    postid = _useState22[0],
+    setPostid = _useState22[1];
+  /* handleLikes, call respective api (update or delete likes) */
+  var UpdateLikes = function UpdateLikes() {
+    // unlike if user already liked
+    if (lognameLikesThis) {
+      fetch(likesUrl, {
+        method: "DELETE",
+        credentials: "same-origin"
+      }).then(function (response) {
+        if (!response.ok) throw Error(response.statusText);
+        return response.json();
+      }).then(function () {
+        setLikes(likes - 1);
+        setLognameLikesThis(false);
+      })["catch"](function (error) {
+        return console.log(error);
+      });
+    } else {
+      // like if user has not liked
+      fetch("/api/v1/likes/?postid=".concat(postid), {
+        method: "POST",
+        credentials: "same-origin"
+      }).then(function (response) {
+        if (!response.ok) throw Error(response.statusText);
+        return response.json();
+      }).then(function () {
+        setLikes(likes + 1);
+        setLognameLikesThis(true);
+      })["catch"](function (error) {
+        return console.log(error);
+      });
+    }
+  };
+  (0,react__WEBPACK_IMPORTED_MODULE_1__.useEffect)(function () {
+    var ignoreStaleRequest = false;
+    fetch(url, {
+      credentials: "same-origin"
+    }).then(function (response) {
+      if (!response.ok) throw Error(response.statusText);
+      return response.json();
+    }).then(function (data) {
+      if (!ignoreStaleRequest) {
+        setCreated(data.created);
+        setImgUrl(data.imgUrl);
+        setOwner(data.owner);
+        setOwnerImgUrl(data.ownerImgUrl);
+        setOwnerShowUrl(data.ownerShowUrl);
+        setPostShowUrl(data.postShowUrl);
+        setLikes(data.likes.numLikes);
+        setLognameLikesThis(data.likes.lognameLikesThis);
+        setLikesUrl(data.likes.url);
+        setPostid(data.postid);
+      }
+    })["catch"](function (error) {
+      return console.log(error);
+    });
+    return function () {
+      ignoreStaleRequest = true;
+    };
+  }, [url]);
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement((react__WEBPACK_IMPORTED_MODULE_1___default().Fragment), null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("div", {
+    className: "container"
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement(PostHeader, {
+    owner: owner,
+    ownerImgUrl: ownerImgUrl,
+    onwerShowUrl: onwerShowUrl,
+    created: created,
+    postShowUrl: postShowUrl
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement(PostImage, {
+    imgUrl: imgUrl
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement(LikesButton, {
+    likes: likes,
+    lognameLikesThis: lognameLikesThis,
+    UpdateLikes: UpdateLikes
+  })));
+}
+
+/* Header of post includes profile pic, name, and time */
+function PostHeader(_ref3) {
+  var owner = _ref3.owner,
+    ownerImgUrl = _ref3.ownerImgUrl,
+    onwerShowUrl = _ref3.onwerShowUrl,
+    created = _ref3.created,
+    postShowUrl = _ref3.postShowUrl;
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement((react__WEBPACK_IMPORTED_MODULE_1___default().Fragment), null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("link", {
+    rel: "stylesheet",
+    type: "text/css",
+    href: "{{ url_for('static', filename='css/style.css') }}"
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("div", {
+    className: "post-header"
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("img", {
+    src: ownerImgUrl,
+    className: "profile-pic",
+    alt: "owner_image"
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("a", {
+    className: "post-username",
+    href: onwerShowUrl
+  }, owner), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("a", {
+    className: "post-time",
+    href: postShowUrl
+  }, created)));
+}
+
+/* Post Image return post image */
+function PostImage(_ref4) {
+  var imgUrl = _ref4.imgUrl;
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("link", {
+    rel: "stylesheet",
+    type: "text/css",
+    href: "{{ url_for('static', filename='css/style.css') }}"
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("img", {
+    className: "post-pic",
     src: imgUrl,
     alt: "post_image"
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("p", null, owner));
+  }));
+}
+function LikesButton(_ref5) {
+  var likes = _ref5.likes,
+    lognameLikesThis = _ref5.lognameLikesThis,
+    UpdateLikes = _ref5.UpdateLikes;
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("link", {
+    rel: "stylesheet",
+    type: "text/css",
+    href: "{{ url_for('static', filename='css/style.css') }}"
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("div", null, likes, likes === 1 ? " like" : " likes"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("button", {
+    "data-testid": "like-unlike-button",
+    onClick: UpdateLikes
+  }, lognameLikesThis ? "Unlike" : "Like")));
 }
 Post.propTypes = {
   url: (prop_types__WEBPACK_IMPORTED_MODULE_2___default().string).isRequired
@@ -34798,13 +34954,14 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
 // Create a root
 var root = (0,react_dom_client__WEBPACK_IMPORTED_MODULE_1__.createRoot)(document.getElementById("reactEntry"));
 
 // This method is only called once
 // Insert the post component into the DOM
 root.render( /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react__WEBPACK_IMPORTED_MODULE_0__.StrictMode, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_post__WEBPACK_IMPORTED_MODULE_2__["default"], {
-  url: "/api/v1/posts/1/"
+  url: "/api/v1/posts/"
 })));
 })();
 

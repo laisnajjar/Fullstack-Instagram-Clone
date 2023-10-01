@@ -5,11 +5,6 @@
     <title>insta485</title>
   </head>
   <body class="main-page">
-    <!-- <div id="reactEntry">
-    Loading ...
-  </div>
-  <script type="text/javascript" src="{{ url_for('static', filename='js/bundle.js') }}"></script> -->
-    {% for user in users %}
     <header>
       <div class="header-container">
         <a class="header-logo" href="/">
@@ -21,8 +16,10 @@
       </div>
       <hr />
     </header>
+    <div id="reactEntry">Loading ...</div>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/bundle.js') }}"></script>
+    <!-- {% for user in users %}
     <div class="container">
-      
       <div class="post-header">
         <img
           alt=""
@@ -87,6 +84,6 @@
         </form>
       </div>
     </div>
-    {% endfor %}
+    {% endfor %} -->
   </body>
 </html>
