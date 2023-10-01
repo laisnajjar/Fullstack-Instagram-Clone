@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
+import { use } from "chai";
 
 /* Render all posts, "The Father of all posts" */
 export default function RenderAllPosts({ url }) {
@@ -26,8 +27,8 @@ export default function RenderAllPosts({ url }) {
 
   return (
     <div>
-      {posts.map((post, index) => (
-        <Post url={post} key={index} />
+      {posts.map((post) => (
+        <Post url={post} key={post} />
       ))}
     </div>
   );
@@ -53,10 +54,6 @@ function Post({ url }) {
         method: "DELETE",
         credentials: "same-origin",
       })
-        .then((response) => {
-          if (!response.ok) throw Error(response.statusText);
-          return response.json();
-        })
         .then(() => {
           setLikes(likes - 1);
           setLognameLikesThis(false);
@@ -79,6 +76,7 @@ function Post({ url }) {
         .catch((error) => console.log(error));
     }
   };
+  /* Set states */
   useEffect(() => {
     let ignoreStaleRequest = false;
     fetch(url, { credentials: "same-origin" })
@@ -106,27 +104,25 @@ function Post({ url }) {
       ignoreStaleRequest = true;
     };
   }, [url]);
+  /* Return Page */
   return (
-    <>
-      <div className="container">
-        <PostHeader
-          owner={owner}
-          ownerImgUrl={ownerImgUrl}
-          onwerShowUrl={onwerShowUrl}
-          created={created}
-          postShowUrl={postShowUrl}
-        />
-        <PostImage imgUrl={imgUrl} />
-        <LikesButton
-          likes={likes}
-          lognameLikesThis={lognameLikesThis}
-          UpdateLikes={UpdateLikes}
-        />
-      </div>
-    </>
+    <div className="container">
+      <PostHeader
+        owner={owner}
+        ownerImgUrl={ownerImgUrl}
+        onwerShowUrl={onwerShowUrl}
+        created={created}
+        postShowUrl={postShowUrl}
+      />
+      <PostImage imgUrl={imgUrl} />
+      <LikesButton
+        likes={likes}
+        lognameLikesThis={lognameLikesThis}
+        UpdateLikes={UpdateLikes}
+      />
+    </div>
   );
 }
-
 /* Header of post includes profile pic, name, and time */
 function PostHeader({
   owner,
@@ -154,7 +150,6 @@ function PostHeader({
     </>
   );
 }
-
 /* Post Image return post image */
 function PostImage({ imgUrl }) {
   return (
@@ -168,7 +163,6 @@ function PostImage({ imgUrl }) {
     </div>
   );
 }
-
 function LikesButton({ likes, lognameLikesThis, UpdateLikes }) {
   return (
     <div>
@@ -182,13 +176,36 @@ function LikesButton({ likes, lognameLikesThis, UpdateLikes }) {
           {likes}
           {likes === 1 ? " like" : " likes"}
         </div>
-        <button data-testid="like-unlike-button" onClick={UpdateLikes}>
+        <button
+          data-testid="like-unlike-button"
+          onClick={UpdateLikes}
+          type="submit"
+        >
           {lognameLikesThis ? "Unlike" : "Like"}
         </button>
       </div>
     </div>
   );
 }
+
+RenderAllPosts.propTypes = {
+  url: PropTypes.string.isRequired,
+};
 Post.propTypes = {
   url: PropTypes.string.isRequired,
+};
+PostHeader.propTypes = {
+  owner: PropTypes.string.isRequired,
+  ownerImgUrl: PropTypes.string.isRequired,
+  onwerShowUrl: PropTypes.string.isRequired,
+  created: PropTypes.string.isRequired,
+  postShowUrl: PropTypes.string.isRequired,
+};
+PostImage.propTypes = {
+  imgUrl: PropTypes.string.isRequired,
+};
+LikesButton.propTypes = {
+  likes: PropTypes.number.isRequired,
+  lognameLikesThis: PropTypes.bool.isRequired,
+  UpdateLikes: PropTypes.func.isRequired,
 };
