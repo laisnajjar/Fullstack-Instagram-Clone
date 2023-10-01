@@ -227,6 +227,10 @@ function Post(_ref2) {
     _useState22 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__["default"])(_useState21, 2),
     postid = _useState22[0],
     setPostid = _useState22[1];
+  var _useState23 = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)([]),
+    _useState24 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_0__["default"])(_useState23, 2),
+    comments = _useState24[0],
+    setComments = _useState24[1];
   /* handleLikes, call respective api (update or delete likes) */
   var UpdateLikes = function UpdateLikes() {
     // unlike if user already liked
@@ -276,6 +280,7 @@ function Post(_ref2) {
         setLognameLikesThis(data.likes.lognameLikesThis);
         setLikesUrl(data.likes.url);
         setPostid(data.postid);
+        setComments(data.comments);
       }
     })["catch"](function (error) {
       return console.log(error);
@@ -352,6 +357,28 @@ function LikesButton(_ref5) {
     onClick: UpdateLikes,
     type: "submit"
   }, lognameLikesThis ? "Unlike" : "Like")));
+}
+function Comments(comments) {
+  //console.log(comments);
+  var commentSection = comments.map(function (comment) {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("link", {
+      rel: "stylesheet",
+      type: "text/css",
+      href: "{{ url_for('static', filename='css/style.css') }}"
+    }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("div", {
+      className: "comment"
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("a", {
+      className: "username",
+      href: comment.ownerShowUrl
+    }, comment.owner), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("a", {
+      className: "comment-text"
+    }, comment.text)));
+  });
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("ul", null, commentSection), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("form", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_1___default().createElement("input", {
+    type: "text",
+    name: "comment",
+    placeholder: "Add a comment..."
+  })));
 }
 RenderAllPosts.propTypes = {
   url: (prop_types__WEBPACK_IMPORTED_MODULE_3___default().string).isRequired

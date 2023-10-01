@@ -46,6 +46,7 @@ function Post({ url }) {
   const [lognameLikesThis, setLognameLikesThis] = useState(false);
   const [likesUrl, setLikesUrl] = useState("");
   const [postid, setPostid] = useState("");
+  const [comments, setComments] = useState([]);
   /* handleLikes, call respective api (update or delete likes) */
   const UpdateLikes = () => {
     // unlike if user already liked
@@ -96,6 +97,7 @@ function Post({ url }) {
           setLognameLikesThis(data.likes.lognameLikesThis);
           setLikesUrl(data.likes.url);
           setPostid(data.postid);
+          setComments(data.comments);
         }
       })
       .catch((error) => console.log(error));
@@ -120,6 +122,7 @@ function Post({ url }) {
         lognameLikesThis={lognameLikesThis}
         UpdateLikes={UpdateLikes}
       />
+      {/* <Comments comments={comments} /> */}
     </div>
   );
 }
@@ -184,6 +187,33 @@ function LikesButton({ likes, lognameLikesThis, UpdateLikes }) {
           {lognameLikesThis ? "Unlike" : "Like"}
         </button>
       </div>
+    </div>
+  );
+}
+
+function Comments(comments) {
+  //console.log(comments);
+  const commentSection = comments.map((comment) => (
+    <div>
+      <link
+        rel="stylesheet"
+        type="text/css"
+        href="{{ url_for('static', filename='css/style.css') }}"
+      />
+      <div className="comment">
+        <a className="username" href={comment.ownerShowUrl}>
+          {comment.owner}
+        </a>
+        <a className="comment-text">{comment.text}</a>
+      </div>
+    </div>
+  ));
+  return (
+    <div>
+      <ul>{commentSection}</ul>
+      <form>
+        <input type="text" name="comment" placeholder="Add a comment..." />
+      </form>
     </div>
   );
 }
