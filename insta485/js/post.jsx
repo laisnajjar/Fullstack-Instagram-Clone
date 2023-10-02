@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { use } from "chai";
 
 /* Render all posts, "The Father of all posts" */
 export default function RenderAllPosts({ url }) {
@@ -77,6 +76,25 @@ function Post({ url }) {
         .catch((error) => console.log(error));
     }
   };
+  /* Post a comment */
+  const PostComment = (newCommentText) => {
+    fetch(`/api/v1/comments/?postid=${postid}`, {
+      method: "POST",
+      credentials: "same-origin",
+      text: newCommentText,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: newCommentText }),
+    })
+      .then((response) => {
+        if (!response.ok) throw Error(response.statusText);
+        return response.json();
+      })
+      .then((newComment) => {
+        setComments([...comments, newComment]);
+      })
+      .catch((error) => console.log(error));
+  };
+
   /* Set states */
   useEffect(() => {
     let ignoreStaleRequest = false;
@@ -122,7 +140,7 @@ function Post({ url }) {
         lognameLikesThis={lognameLikesThis}
         UpdateLikes={UpdateLikes}
       />
-      {/* <Comments comments={comments} /> */}
+      <Comments comments={comments} PostComment={PostComment} />
     </div>
   );
 }
@@ -191,28 +209,44 @@ function LikesButton({ likes, lognameLikesThis, UpdateLikes }) {
   );
 }
 
-function Comments(comments) {
+function Comments({ comments, PostComment }) {
   //console.log(comments);
+  const [newComment, setNewComment] = useState("");
+
+  const handleInputChange = (event) => {
+    setNewComment(event.target.value);
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    PostComment(newComment);
+    setNewComment("");
+  };
+
   const commentSection = comments.map((comment) => (
+    <div key={comment.commentid} className="comments">
+      <a className="username" href={comment.ownerShowUrl}>
+        {comment.owner}
+      </a>
+      <a>{comment.text}</a>
+    </div>
+  ));
+  return (
     <div>
       <link
         rel="stylesheet"
         type="text/css"
         href="{{ url_for('static', filename='css/style.css') }}"
       />
-      <div className="comment">
-        <a className="username" href={comment.ownerShowUrl}>
-          {comment.owner}
-        </a>
-        <a className="comment-text">{comment.text}</a>
-      </div>
-    </div>
-  ));
-  return (
-    <div>
-      <ul>{commentSection}</ul>
-      <form>
-        <input type="text" name="comment" placeholder="Add a comment..." />
+      <div>{commentSection}</div>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          name="comment"
+          placeholder="Add a comment..."
+          value={newComment}
+          onChange={handleInputChange}
+        />
       </form>
     </div>
   );
@@ -238,4 +272,15 @@ LikesButton.propTypes = {
   likes: PropTypes.number.isRequired,
   lognameLikesThis: PropTypes.bool.isRequired,
   UpdateLikes: PropTypes.func.isRequired,
+};
+
+Comments.propTypes = {
+  comments: PropTypes.arrayOf(
+    PropTypes.shape({
+      commentid: PropTypes.number.isRequired,
+      owner: PropTypes.string.isRequired,
+      ownerShowUrl: PropTypes.string.isRequired,
+      text: PropTypes.string.isRequired,
+    }),
+  ).isRequired,
 };

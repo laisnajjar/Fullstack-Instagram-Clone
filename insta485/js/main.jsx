@@ -1,7 +1,6 @@
 import React, { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import RenderAllPosts from "./post";
-
 // Create a root
 const root = createRoot(document.getElementById("reactEntry"));
 
