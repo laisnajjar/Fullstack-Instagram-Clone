@@ -114,9 +114,7 @@ def delete():
 
     for file in post_files:
         path = insta485.app.config["UPLOAD_FOLDER"]/file['filename']
-        print(f'THE PATH !!!!!!!!!!!!!!{path}')
         os.remove(path)
-        print(f'{path.exists()}')
     path = insta485.app.config["UPLOAD_FOLDER"]/user_icon["filename"]
     os.remove(path)
 

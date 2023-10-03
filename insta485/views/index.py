@@ -63,7 +63,6 @@ def show_index():
         (logname, logname, logname)
     )
     users = user_fetch.fetchall()
-    print(users)
     comment_fetch = connection.execute(
         "SELECT commentid, text, owner, postid, created "
         "FROM comments"

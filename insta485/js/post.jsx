@@ -1,10 +1,34 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
+import InfiniteScroll from "react-infinite-scroll-component";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(relativeTime);
+dayjs.extend(utc);
 
 /* Render all posts, "The Father of all posts" */
 export default function RenderAllPosts({ url }) {
   const [posts, setPosts] = useState([]);
-
+  const [nextUrl, setNextUrl] = useState("");
+  const [hasMore, setHasMore] = useState(true);
+  /* fecth more data */
+  const fetchMoreData = () => {
+    fetch(nextUrl, { credentials: "same-origin" })
+      .then((response) => {
+        if (!response.ok) throw Error(response.statusText);
+        return response.json();
+      })
+      .then((data) => {
+        setPosts((prevPosts) => [
+          ...prevPosts,
+          ...data.results.map((post) => post.url),
+        ]);
+        setNextUrl(data.next);
+      })
+      .catch((error) => console.log(error));
+  };
   useEffect(() => {
     let ignoreStaleRequest = false;
     fetch(url, { credentials: "same-origin" })
@@ -15,6 +39,7 @@ export default function RenderAllPosts({ url }) {
       .then((data) => {
         if (!ignoreStaleRequest) {
           setPosts(data.results.map((post) => post.url));
+          setNextUrl(data.next);
         }
       })
       .catch((error) => console.log(error));
@@ -24,12 +49,26 @@ export default function RenderAllPosts({ url }) {
     };
   }, [url]);
 
+  useEffect(() => {
+    if (nextUrl === null) {
+      setHasMore(false);
+    }
+  }, [nextUrl]);
+
   return (
-    <div>
-      {posts.map((post) => (
-        <Post url={post} key={post} />
-      ))}
-    </div>
+    <InfiniteScroll
+      style={{ overflow: "auto", height: "100vh" }}
+      dataLength={posts.length}
+      next={fetchMoreData}
+      hasMore={hasMore}
+      loader={<h4>Loading...</h4>}
+    >
+      <div>
+        {posts.map((post) => (
+          <Post url={post} key={post} />
+        ))}
+      </div>
+    </InfiniteScroll>
   );
 }
 
@@ -41,14 +80,14 @@ function Post({ url }) {
   const [ownerImgUrl, setOwnerImgUrl] = useState("");
   const [onwerShowUrl, setOwnerShowUrl] = useState("");
   const [postShowUrl, setPostShowUrl] = useState("");
-  const [likes, setLikes] = useState("");
+  const [likes, setLikes] = useState(0);
   const [lognameLikesThis, setLognameLikesThis] = useState(false);
   const [likesUrl, setLikesUrl] = useState("");
   const [postid, setPostid] = useState("");
   const [comments, setComments] = useState([]);
   /* handleLikes, call respective api (update or delete likes) */
   const UpdateLikes = () => {
-    // unlike if user already liked
+    /* unlike if user already liked */
     if (lognameLikesThis) {
       fetch(likesUrl, {
         method: "DELETE",
@@ -61,6 +100,24 @@ function Post({ url }) {
         .catch((error) => console.log(error));
     } else {
       // like if user has not liked
+      fetch(`/api/v1/likes/?postid=${postid}`, {
+        method: "POST",
+        credentials: "same-origin",
+      })
+        .then((response) => {
+          if (!response.ok) throw Error(response.statusText);
+          return response.json();
+        })
+        .then(() => {
+          setLikes(likes + 1);
+          setLognameLikesThis(true);
+        })
+        .catch((error) => console.log(error));
+    }
+  };
+  /* Double click to like */
+  const DoubleClickLikes = () => {
+    if (lognameLikesThis === false) {
       fetch(`/api/v1/likes/?postid=${postid}`, {
         method: "POST",
         credentials: "same-origin",
@@ -94,6 +151,17 @@ function Post({ url }) {
       })
       .catch((error) => console.log(error));
   };
+  /* Delete a comment */
+  const DeleteComment = (url) => {
+    fetch(url, {
+      method: "DELETE",
+      credentials: "same-origin",
+    })
+      .then(() => {
+        setComments(comments.filter((comment) => comment.url !== url));
+      })
+      .catch((error) => console.log(error));
+  };
 
   /* Set states */
   useEffect(() => {
@@ -105,17 +173,18 @@ function Post({ url }) {
       })
       .then((data) => {
         if (!ignoreStaleRequest) {
-          setCreated(data.created);
           setImgUrl(data.imgUrl);
           setOwner(data.owner);
           setOwnerImgUrl(data.ownerImgUrl);
           setOwnerShowUrl(data.ownerShowUrl);
           setPostShowUrl(data.postShowUrl);
-          setLikes(data.likes.numLikes);
+          setLikes(Number(data.likes.numLikes));
           setLognameLikesThis(data.likes.lognameLikesThis);
           setLikesUrl(data.likes.url);
           setPostid(data.postid);
           setComments(data.comments);
+          const humanReadableTime = dayjs.utc(data.created).local().fromNow();
+          setCreated(humanReadableTime);
         }
       })
       .catch((error) => console.log(error));
@@ -134,13 +203,17 @@ function Post({ url }) {
         created={created}
         postShowUrl={postShowUrl}
       />
-      <PostImage imgUrl={imgUrl} />
+      <PostImage imgUrl={imgUrl} DoubleClickLikes={DoubleClickLikes} />
       <LikesButton
         likes={likes}
         lognameLikesThis={lognameLikesThis}
         UpdateLikes={UpdateLikes}
       />
-      <Comments comments={comments} PostComment={PostComment} />
+      <Comments
+        comments={comments}
+        PostComment={PostComment}
+        DeleteComment={DeleteComment}
+      />
     </div>
   );
 }
@@ -157,7 +230,7 @@ function PostHeader({
       <link
         rel="stylesheet"
         type="text/css"
-        href="{{ url_for('static', filename='css/style.css') }}"
+        href="{{url_for('static', filename='css/style.css')}}"
       />
       <div className="post-header">
         <img src={ownerImgUrl} className="profile-pic" alt="owner_image" />
@@ -172,7 +245,7 @@ function PostHeader({
   );
 }
 /* Post Image return post image */
-function PostImage({ imgUrl }) {
+function PostImage({ imgUrl, DoubleClickLikes }) {
   return (
     <div>
       <link
@@ -180,7 +253,12 @@ function PostImage({ imgUrl }) {
         type="text/css"
         href="{{ url_for('static', filename='css/style.css') }}"
       />
-      <img className="post-pic" src={imgUrl} alt="post_image" />
+      <img
+        className="post-pic"
+        src={imgUrl}
+        alt="post_image"
+        onDoubleClick={() => DoubleClickLikes()}
+      />
     </div>
   );
 }
@@ -209,8 +287,8 @@ function LikesButton({ likes, lognameLikesThis, UpdateLikes }) {
   );
 }
 
-function Comments({ comments, PostComment }) {
-  //console.log(comments);
+function Comments({ comments, PostComment, DeleteComment }) {
+  // console.log(comments);
   const [newComment, setNewComment] = useState("");
 
   const handleInputChange = (event) => {
@@ -222,13 +300,21 @@ function Comments({ comments, PostComment }) {
     PostComment(newComment);
     setNewComment("");
   };
-
   const commentSection = comments.map((comment) => (
     <div key={comment.commentid} className="comments">
       <a className="username" href={comment.ownerShowUrl}>
         {comment.owner}
       </a>
-      <a>{comment.text}</a>
+      <span data-testid="comment-text">{comment.text}</span>
+      {comment.lognameOwnsThis && (
+        <button
+          data-testid="delete-comment-button"
+          onClick={() => DeleteComment(comment.url)}
+          type="submit"
+        >
+          Delete
+        </button>
+      )}
     </div>
   ));
   return (
@@ -239,7 +325,7 @@ function Comments({ comments, PostComment }) {
         href="{{ url_for('static', filename='css/style.css') }}"
       />
       <div>{commentSection}</div>
-      <form onSubmit={handleSubmit}>
+      <form data-testid="comment-form" onSubmit={handleSubmit}>
         <input
           type="text"
           name="comment"
@@ -267,13 +353,13 @@ PostHeader.propTypes = {
 };
 PostImage.propTypes = {
   imgUrl: PropTypes.string.isRequired,
+  DoubleClickLikes: PropTypes.func.isRequired,
 };
 LikesButton.propTypes = {
   likes: PropTypes.number.isRequired,
   lognameLikesThis: PropTypes.bool.isRequired,
   UpdateLikes: PropTypes.func.isRequired,
 };
-
 Comments.propTypes = {
   comments: PropTypes.arrayOf(
     PropTypes.shape({
@@ -283,4 +369,6 @@ Comments.propTypes = {
       text: PropTypes.string.isRequired,
     }),
   ).isRequired,
+  PostComment: PropTypes.func.isRequired,
+  DeleteComment: PropTypes.func.isRequired,
 };
