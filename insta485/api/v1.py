@@ -249,7 +249,6 @@ def api_update_likes():
     if logname is None:
         return jsonify({"message": "Forbidden", "status_code": 403}), 403
     postid = int(request.args.get('postid'))
-    print(f"LOOOOOK HEREEEEEE --->>> postid: {postid}")
     if check_postid_range(postid):
         return jsonify({"message": "Not Found", "status_code": 404}), 404
     like_fetch = connection.execute(
@@ -323,7 +322,7 @@ def api_add_comment():
         return jsonify({"message": "Forbidden", "status_code": 403}), 403
     postid = int(request.args.get('postid'))
     text = request.get_json().get('text')
-    if check_postid_range(postid):
+    if check_postid_range(postid) or text is None:
         return jsonify({"message": "Not Found", "status_code": 404}), 404
     connection.execute(
         """
