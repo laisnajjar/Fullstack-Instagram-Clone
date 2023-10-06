@@ -106,7 +106,7 @@ function RenderAllPosts(_ref) {
     loader: /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("h4", null, "Loading...")
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("div", null, posts.map(function (post) {
     return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement(Post, {
-      url: post,
+      postUrl: post,
       key: post
     });
   })));
@@ -114,7 +114,7 @@ function RenderAllPosts(_ref) {
 
 /* Display image and post owner of a single post */
 function Post(_ref2) {
-  var url = _ref2.url;
+  var postUrl = _ref2.postUrl;
   var _useState7 = (0,react__WEBPACK_IMPORTED_MODULE_2__.useState)(""),
     _useState8 = (0,_babel_runtime_helpers_slicedToArray__WEBPACK_IMPORTED_MODULE_1__["default"])(_useState7, 2),
     created = _useState8[0],
@@ -166,23 +166,31 @@ function Post(_ref2) {
       fetch(likesUrl, {
         method: "DELETE",
         credentials: "same-origin"
-      }).then(function () {
-        setLikes(likes - 1);
+      }).then(function (response) {
+        if (!response.ok) throw Error(response.statusText);
+        setLikes(function (likes) {
+          return likes - 1;
+        });
         setLognameLikesThis(false);
       })["catch"](function (error) {
         return console.log(error);
       });
     } else {
       // like if user has not liked
+      console.log("/api/v1/likes/?postid=${postid}");
+      console.log(postid);
       fetch("/api/v1/likes/?postid=".concat(postid), {
         method: "POST",
         credentials: "same-origin"
       }).then(function (response) {
         if (!response.ok) throw Error(response.statusText);
         return response.json();
-      }).then(function () {
-        setLikes(likes + 1);
+      }).then(function (data) {
+        setLikes(function (likes) {
+          return likes + 1;
+        });
         setLognameLikesThis(true);
+        setLikesUrl(data.url);
       })["catch"](function (error) {
         return console.log(error);
       });
@@ -210,7 +218,6 @@ function Post(_ref2) {
     fetch("/api/v1/comments/?postid=".concat(postid), {
       method: "POST",
       credentials: "same-origin",
-      text: newCommentText,
       headers: {
         "Content-Type": "application/json"
       },
@@ -227,13 +234,15 @@ function Post(_ref2) {
     });
   };
   /* Delete a comment */
-  var DeleteComment = function DeleteComment(url) {
-    fetch(url, {
+  var DeleteComment = function DeleteComment(commentUrl) {
+    fetch(commentUrl, {
       method: "DELETE",
       credentials: "same-origin"
+    }).then(function (response) {
+      if (!response.ok) throw Error(response.statusText);
     }).then(function () {
       setComments(comments.filter(function (comment) {
-        return comment.url !== url;
+        return comment.url !== commentUrl;
       }));
     })["catch"](function (error) {
       return console.log(error);
@@ -243,7 +252,7 @@ function Post(_ref2) {
   /* Set states */
   (0,react__WEBPACK_IMPORTED_MODULE_2__.useEffect)(function () {
     var ignoreStaleRequest = false;
-    fetch(url, {
+    fetch(postUrl, {
       credentials: "same-origin"
     }).then(function (response) {
       if (!response.ok) throw Error(response.statusText);
@@ -269,7 +278,7 @@ function Post(_ref2) {
     return function () {
       ignoreStaleRequest = true;
     };
-  }, [url]);
+  }, [postUrl]);
   /* Return Page */
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("div", {
     className: "container"
@@ -299,11 +308,7 @@ function PostHeader(_ref3) {
     onwerShowUrl = _ref3.onwerShowUrl,
     created = _ref3.created,
     postShowUrl = _ref3.postShowUrl;
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement((react__WEBPACK_IMPORTED_MODULE_2___default().Fragment), null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("link", {
-    rel: "stylesheet",
-    type: "text/css",
-    href: "{{url_for('static', filename='css/style.css')}}"
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("div", {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("div", {
     className: "post-header"
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("img", {
     src: ownerImgUrl,
@@ -315,38 +320,30 @@ function PostHeader(_ref3) {
   }, owner), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("a", {
     className: "post-time",
     href: postShowUrl
-  }, created)));
+  }, created));
 }
 /* Post Image return post image */
 function PostImage(_ref4) {
   var imgUrl = _ref4.imgUrl,
     DoubleClickLikes = _ref4.DoubleClickLikes;
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("link", {
-    rel: "stylesheet",
-    type: "text/css",
-    href: "{{ url_for('static', filename='css/style.css') }}"
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("img", {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("img", {
     className: "post-pic",
     src: imgUrl,
     alt: "post_image",
     onDoubleClick: function onDoubleClick() {
       return DoubleClickLikes();
     }
-  }));
+  });
 }
 function LikesButton(_ref5) {
   var likes = _ref5.likes,
     lognameLikesThis = _ref5.lognameLikesThis,
     UpdateLikes = _ref5.UpdateLikes;
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("link", {
-    rel: "stylesheet",
-    type: "text/css",
-    href: "{{ url_for('static', filename='css/style.css') }}"
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("div", null, likes, likes === 1 ? " like" : " likes"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("button", {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("b", null, likes, likes === 1 ? " like" : " likes")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("button", {
     "data-testid": "like-unlike-button",
     onClick: UpdateLikes,
     type: "submit"
-  }, lognameLikesThis ? "Unlike" : "Like")));
+  }, lognameLikesThis ? "Unlike" : "Like"));
 }
 function Comments(_ref6) {
   var comments = _ref6.comments,
@@ -382,11 +379,7 @@ function Comments(_ref6) {
       type: "submit"
     }, "Delete"));
   });
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("link", {
-    rel: "stylesheet",
-    type: "text/css",
-    href: "{{ url_for('static', filename='css/style.css') }}"
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("div", null, commentSection), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("form", {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("div", null, commentSection), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("form", {
     "data-testid": "comment-form",
     onSubmit: handleSubmit
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_2___default().createElement("input", {
@@ -401,7 +394,7 @@ RenderAllPosts.propTypes = {
   url: (prop_types__WEBPACK_IMPORTED_MODULE_7___default().string).isRequired
 };
 Post.propTypes = {
-  url: (prop_types__WEBPACK_IMPORTED_MODULE_7___default().string).isRequired
+  postUrl: (prop_types__WEBPACK_IMPORTED_MODULE_7___default().string).isRequired
 };
 PostHeader.propTypes = {
   owner: (prop_types__WEBPACK_IMPORTED_MODULE_7___default().string).isRequired,

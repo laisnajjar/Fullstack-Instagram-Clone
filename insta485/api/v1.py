@@ -249,11 +249,12 @@ def api_update_likes():
     if logname is None:
         return jsonify({"message": "Forbidden", "status_code": 403}), 403
     postid = int(request.args.get('postid'))
+    print(f"LOOOOOK HEREEEEEE --->>> postid: {postid}")
     if check_postid_range(postid):
         return jsonify({"message": "Not Found", "status_code": 404}), 404
     like_fetch = connection.execute(
         """
-        SELECT likeid,
+        SELECT likeid as id,
         CASE WHEN owner = ? THEN 1 ELSE 0 END AS lognameLikesThis
         FROM likes
         WHERE postid = ?
@@ -263,8 +264,8 @@ def api_update_likes():
     likes = like_fetch.fetchone()
     # user already liked post
     if likes is not None and likes['lognameLikesThis'] == 1:
-        return jsonify({"likeid": likes['likeid'],
-                        "url": f"/api/v1/likes/{likes['likeid']}/"}), 200
+        return jsonify({"likeid": likes['id'],
+                        "url": f"/api/v1/likes/{likes['id']}/"}), 200
     # update user to like post
     connection.execute(
         """
@@ -275,8 +276,8 @@ def api_update_likes():
     )
     # get likeids from inserted
     get_likeid = connection.execute(
-        "SELECT likeid FROM likes WHERE postid = ?",
-        (postid,)
+        "SELECT likeid FROM likes WHERE postid = ? and owner = ?",
+        (postid, logname,)
     )
     got_likes = get_likeid.fetchone()
     return jsonify({"likeid": got_likes['likeid'],
@@ -306,9 +307,9 @@ def api_delete_likes(likeid):
     connection.execute(
         """
         DELETE FROM likes
-        WHERE likeid = ?
+        WHERE likeid = ? and owner = ?
         """,
-        (likeid,)
+        (likeid, logname,)
     )
     return "", 204
 

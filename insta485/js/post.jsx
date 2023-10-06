@@ -65,7 +65,7 @@ export default function RenderAllPosts({ url }) {
     >
       <div>
         {posts.map((post) => (
-          <Post url={post} key={post} />
+          <Post postUrl={post} key={post} />
         ))}
       </div>
     </InfiniteScroll>
@@ -73,7 +73,7 @@ export default function RenderAllPosts({ url }) {
 }
 
 /* Display image and post owner of a single post */
-function Post({ url }) {
+function Post({ postUrl }) {
   const [created, setCreated] = useState("");
   const [imgUrl, setImgUrl] = useState("");
   const [owner, setOwner] = useState("");
@@ -93,13 +93,16 @@ function Post({ url }) {
         method: "DELETE",
         credentials: "same-origin",
       })
-        .then(() => {
-          setLikes(likes - 1);
+        .then((response) => {
+          if (!response.ok) throw Error(response.statusText);
+          setLikes((likes) => likes - 1);
           setLognameLikesThis(false);
         })
         .catch((error) => console.log(error));
     } else {
       // like if user has not liked
+      console.log("/api/v1/likes/?postid=${postid}");
+      console.log(postid);
       fetch(`/api/v1/likes/?postid=${postid}`, {
         method: "POST",
         credentials: "same-origin",
@@ -108,9 +111,10 @@ function Post({ url }) {
           if (!response.ok) throw Error(response.statusText);
           return response.json();
         })
-        .then(() => {
-          setLikes(likes + 1);
+        .then((data) => {
+          setLikes((likes) => likes + 1);
           setLognameLikesThis(true);
+          setLikesUrl(data.url);
         })
         .catch((error) => console.log(error));
     }
@@ -138,7 +142,6 @@ function Post({ url }) {
     fetch(`/api/v1/comments/?postid=${postid}`, {
       method: "POST",
       credentials: "same-origin",
-      text: newCommentText,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: newCommentText }),
     })
@@ -152,13 +155,16 @@ function Post({ url }) {
       .catch((error) => console.log(error));
   };
   /* Delete a comment */
-  const DeleteComment = (url) => {
-    fetch(url, {
+  const DeleteComment = (commentUrl) => {
+    fetch(commentUrl, {
       method: "DELETE",
       credentials: "same-origin",
     })
+      .then((response) => {
+        if (!response.ok) throw Error(response.statusText);
+      })
       .then(() => {
-        setComments(comments.filter((comment) => comment.url !== url));
+        setComments(comments.filter((comment) => comment.url !== commentUrl));
       })
       .catch((error) => console.log(error));
   };
@@ -166,7 +172,7 @@ function Post({ url }) {
   /* Set states */
   useEffect(() => {
     let ignoreStaleRequest = false;
-    fetch(url, { credentials: "same-origin" })
+    fetch(postUrl, { credentials: "same-origin" })
       .then((response) => {
         if (!response.ok) throw Error(response.statusText);
         return response.json();
@@ -192,7 +198,7 @@ function Post({ url }) {
     return () => {
       ignoreStaleRequest = true;
     };
-  }, [url]);
+  }, [postUrl]);
   /* Return Page */
   return (
     <div className="container">
@@ -226,63 +232,44 @@ function PostHeader({
   postShowUrl,
 }) {
   return (
-    <>
-      <link
-        rel="stylesheet"
-        type="text/css"
-        href="{{url_for('static', filename='css/style.css')}}"
-      />
-      <div className="post-header">
-        <img src={ownerImgUrl} className="profile-pic" alt="owner_image" />
-        <a className="post-username" href={onwerShowUrl}>
-          {owner}
-        </a>
-        <a className="post-time" href={postShowUrl}>
-          {created}
-        </a>
-      </div>
-    </>
+    <div className="post-header">
+      <img src={ownerImgUrl} className="profile-pic" alt="owner_image" />
+      <a className="post-username" href={onwerShowUrl}>
+        {owner}
+      </a>
+      <a className="post-time" href={postShowUrl}>
+        {created}
+      </a>
+    </div>
   );
 }
 /* Post Image return post image */
 function PostImage({ imgUrl, DoubleClickLikes }) {
   return (
-    <div>
-      <link
-        rel="stylesheet"
-        type="text/css"
-        href="{{ url_for('static', filename='css/style.css') }}"
-      />
-      <img
-        className="post-pic"
-        src={imgUrl}
-        alt="post_image"
-        onDoubleClick={() => DoubleClickLikes()}
-      />
-    </div>
+    <img
+      className="post-pic"
+      src={imgUrl}
+      alt="post_image"
+      onDoubleClick={() => DoubleClickLikes()}
+    />
   );
 }
 function LikesButton({ likes, lognameLikesThis, UpdateLikes }) {
   return (
     <div>
-      <link
-        rel="stylesheet"
-        type="text/css"
-        href="{{ url_for('static', filename='css/style.css') }}"
-      />
       <div>
-        <div>
+        <b>
           {likes}
           {likes === 1 ? " like" : " likes"}
-        </div>
-        <button
-          data-testid="like-unlike-button"
-          onClick={UpdateLikes}
-          type="submit"
-        >
-          {lognameLikesThis ? "Unlike" : "Like"}
-        </button>
+        </b>
       </div>
+      <button
+        data-testid="like-unlike-button"
+        onClick={UpdateLikes}
+        type="submit"
+      >
+        {lognameLikesThis ? "Unlike" : "Like"}
+      </button>
     </div>
   );
 }
@@ -319,11 +306,6 @@ function Comments({ comments, PostComment, DeleteComment }) {
   ));
   return (
     <div>
-      <link
-        rel="stylesheet"
-        type="text/css"
-        href="{{ url_for('static', filename='css/style.css') }}"
-      />
       <div>{commentSection}</div>
       <form data-testid="comment-form" onSubmit={handleSubmit}>
         <input
@@ -342,7 +324,7 @@ RenderAllPosts.propTypes = {
   url: PropTypes.string.isRequired,
 };
 Post.propTypes = {
-  url: PropTypes.string.isRequired,
+  postUrl: PropTypes.string.isRequired,
 };
 PostHeader.propTypes = {
   owner: PropTypes.string.isRequired,
