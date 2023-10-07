@@ -95,14 +95,12 @@ function Post({ postUrl }) {
       })
         .then((response) => {
           if (!response.ok) throw Error(response.statusText);
-          setLikes((likes) => likes - 1);
+          setLikes(likes - 1);
           setLognameLikesThis(false);
         })
         .catch((error) => console.log(error));
     } else {
       // like if user has not liked
-      console.log("/api/v1/likes/?postid=${postid}");
-      console.log(postid);
       fetch(`/api/v1/likes/?postid=${postid}`, {
         method: "POST",
         credentials: "same-origin",
@@ -112,7 +110,7 @@ function Post({ postUrl }) {
           return response.json();
         })
         .then((data) => {
-          setLikes((likes) => likes + 1);
+          setLikes(likes + 1);
           setLognameLikesThis(true);
           setLikesUrl(data.url);
         })
