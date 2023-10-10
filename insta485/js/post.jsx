@@ -74,6 +74,7 @@ export default function RenderAllPosts({ url }) {
 
 /* Display image and post owner of a single post */
 function Post({ postUrl }) {
+  const [loaded, setLoaded] = useState(false);
   const [created, setCreated] = useState("");
   const [imgUrl, setImgUrl] = useState("");
   const [owner, setOwner] = useState("");
@@ -189,6 +190,7 @@ function Post({ postUrl }) {
           setComments(data.comments);
           const humanReadableTime = dayjs.utc(data.created).local().fromNow();
           setCreated(humanReadableTime);
+          setLoaded(true);
         }
       })
       .catch((error) => console.log(error));
@@ -200,24 +202,30 @@ function Post({ postUrl }) {
   /* Return Page */
   return (
     <div className="container">
-      <PostHeader
-        owner={owner}
-        ownerImgUrl={ownerImgUrl}
-        onwerShowUrl={onwerShowUrl}
-        created={created}
-        postShowUrl={postShowUrl}
-      />
-      <PostImage imgUrl={imgUrl} DoubleClickLikes={DoubleClickLikes} />
-      <LikesButton
-        likes={likes}
-        lognameLikesThis={lognameLikesThis}
-        UpdateLikes={UpdateLikes}
-      />
-      <Comments
-        comments={comments}
-        PostComment={PostComment}
-        DeleteComment={DeleteComment}
-      />
+      {loaded ? (
+        <>
+          <PostHeader
+            owner={owner}
+            ownerImgUrl={ownerImgUrl}
+            onwerShowUrl={onwerShowUrl}
+            created={created}
+            postShowUrl={postShowUrl}
+          />
+          <PostImage imgUrl={imgUrl} DoubleClickLikes={DoubleClickLikes} />
+          <LikesButton
+            likes={likes}
+            lognameLikesThis={lognameLikesThis}
+            UpdateLikes={UpdateLikes}
+          />
+          <Comments
+            comments={comments}
+            PostComment={PostComment}
+            DeleteComment={DeleteComment}
+          />
+        </>
+      ) : (
+        <div>Loading...</div>
+      )}
     </div>
   );
 }
