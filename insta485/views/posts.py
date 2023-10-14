@@ -45,7 +45,7 @@ def show_posts(postid):
         FROM comments c
         WHERE c.postid = ?
         """,
-        (postid)
+        (postid,)
     )
     comments = comment_fetch.fetchall()
     # Add database info to context
